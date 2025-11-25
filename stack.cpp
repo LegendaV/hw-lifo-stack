@@ -1,48 +1,105 @@
 #include "stack.hpp"
 
 #include <cstddef>
-
-// TODO: remove me
-#define UNUSED(VAR) (void)(VAR)
+#include <unordered_map>
+#include <vector>
 
 namespace stack
 {
 
-Handle create()
-{
-    return -1;
-}
+    struct Node
+    {
+        std::size_t count;
+        Node* last;
+        std::size_t dataSize;
+        unsigned char* data;
 
-void destroy(const Handle handle)
-{
-    UNUSED(handle);
-}
+        Node()
+        {
+            count = 0;
+            last = nullptr;
+            dataSize = 0;
+            data = nullptr;
+        }
 
-bool valid(const Handle handle)
-{
-    UNUSED(handle);
-    return false;
-}
+        Node(Node* last, unsigned char* data, const std::size_t dataSize)
+        {
+            this->count = last->count + 1;
+            this->dataSize = dataSize;
+            this->last = last;
+            this->data = data;
+        }
+    };
 
-std::size_t count(const Handle handle)
-{
-    UNUSED(handle);
-    return 0u;
-}
+    static Handle stackCount = 0;
+    static std::unordered_map<Handle, Node> stackDict;
 
-void push(const Handle handle, const void* const data, const std::size_t size)
-{
-    UNUSED(handle);
-    UNUSED(data);
-    UNUSED(size);
-}
+    Handle create()
+    {
+        const Node head;
+        stackDict[stackCount] = head;
+        return stackCount++;
+    }
 
-std::size_t pop(const Handle handle, void* const data, const std::size_t size)
-{
-    UNUSED(handle);
-    UNUSED(data);
-    UNUSED(size);
-    return 0u;
-}
+    void destroy(const Handle handle)
+    {
+        if (valid(handle))
+        {
+            stackDict.erase(handle);
+        }
+    }
+
+    bool valid(const Handle handle)
+    {
+        return stackDict.find(handle) != stackDict.end();
+    }
+
+    std::size_t count(const Handle handle)
+    {
+        if (!valid(handle))
+        {
+            return 0u;
+        }
+
+        return stackDict.find(handle)->second.count;
+    }
+
+    void push(const Handle handle, const void* const data, const std::size_t size)
+    {
+        const auto stack = stackDict.find(handle);
+        if (stack == stackDict.end())
+        {
+            return;
+        }
+
+        Node lastHead = stack->second;
+
+        unsigned char* buf = new unsigned char[size];
+        std::memcpy(buf, data, size);
+
+        const Node newNode = Node(&lastHead, buf, size);
+        stackDict[handle] = newNode;
+    }
+
+    std::size_t pop(const Handle handle, void* const data, const std::size_t size)
+    {
+        if (!valid(handle))
+        {
+            return 0u;
+        }
+
+        const Node head = stackDict.find(handle)->second;
+        if (head.last == nullptr)
+        {
+            return 0u;
+        }
+
+        stackDict[handle] = *head.last;
+
+        const std::size_t copySize = std::min(size, head.dataSize);
+        std::memcpy(data, head.data, copySize);
+
+        return copySize;
+    }
 
 } // namespace stack
