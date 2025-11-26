@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <unordered_map>
 #include <vector>
+#include <cstring>
 
 namespace stack
 {
