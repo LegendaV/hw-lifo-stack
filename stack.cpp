@@ -7,7 +7,6 @@
 
 namespace stack
 {
-
     struct Node
     {
         std::size_t count;
@@ -30,16 +29,26 @@ namespace stack
             this->last = last;
             this->data = data;
         }
+
+        ~Node()
+        {
+            delete data;
+        }
     };
 
     static Handle stackCount = 0;
-    static std::unordered_map<Handle, Node> stackDict;
+    static std::unordered_map<Handle, Node*> stackDict;
 
     Handle create()
     {
-        const Node head;
+        Node* head = new Node();
         stackDict[stackCount] = head;
         return stackCount++;
+    }
+
+    bool valid(const Handle handle)
+    {
+        return stackDict.find(handle) != stackDict.end();
     }
 
     void destroy(const Handle handle)
@@ -50,11 +59,6 @@ namespace stack
         }
     }
 
-    bool valid(const Handle handle)
-    {
-        return stackDict.find(handle) != stackDict.end();
-    }
-
     std::size_t count(const Handle handle)
     {
         if (!valid(handle))
@@ -62,45 +66,45 @@ namespace stack
             return 0u;
         }
 
-        return stackDict.find(handle)->second.count;
+        return stackDict.find(handle)->second->count;
     }
 
     void push(const Handle handle, const void* const data, const std::size_t size)
     {
         const auto stack = stackDict.find(handle);
-        if (stack == stackDict.end())
+        if (stack == stackDict.end() || data == nullptr || size <= 0u)
         {
             return;
         }
 
-        Node lastHead = stack->second;
+        Node* lastHead = stack->second;
 
         unsigned char* buf = new unsigned char[size];
         std::memcpy(buf, data, size);
 
-        const Node newNode = Node(&lastHead, buf, size);
+        Node* newNode = new Node(lastHead, buf, size);
         stackDict[handle] = newNode;
     }
 
     std::size_t pop(const Handle handle, void* const data, const std::size_t size)
     {
-        if (!valid(handle))
+        if (!valid(handle) || data == nullptr || size <= 0u)
         {
             return 0u;
         }
 
-        const Node head = stackDict.find(handle)->second;
-        if (head.last == nullptr)
+        const Node* head = stackDict.find(handle)->second;
+        if (head->last == nullptr)
         {
             return 0u;
         }
 
-        stackDict[handle] = *head.last;
+        stackDict[handle] = head->last;
 
-        const std::size_t copySize = std::min(size, head.dataSize);
-        std::memcpy(data, head.data, copySize);
+        const std::size_t copySize = std::min(size, head->dataSize);
+        std::memcpy(data, head->data, copySize);
 
+        delete head;
         return copySize;
     }
-
 } // namespace stack
