@@ -14,17 +14,13 @@ namespace stack
         std::size_t dataSize;
         unsigned char* data;
 
-        Node()
-        {
-            count = 0;
-            last = nullptr;
-            dataSize = 0;
-            data = nullptr;
-        }
-
         Node(Node* last, unsigned char* data, const std::size_t dataSize)
         {
-            this->count = last->count + 1;
+            this->count = 1;
+            if (last != nullptr)
+            {
+                this->count = last->count + 1;
+            }
             this->dataSize = dataSize;
             this->last = last;
             this->data = data;
@@ -41,8 +37,7 @@ namespace stack
 
     Handle create()
     {
-        Node* head = new Node();
-        stackDict[stackCount] = head;
+        stackDict[stackCount] = nullptr;
         return stackCount++;
     }
 
@@ -55,6 +50,13 @@ namespace stack
     {
         if (valid(handle))
         {
+            Node* current = stackDict.find(handle)->second;
+            while (current != nullptr)
+            {
+                Node* nodeToDelete = current;
+                current = current->last;
+                delete current;
+            }
             stackDict.erase(handle);
         }
     }
@@ -66,7 +68,13 @@ namespace stack
             return 0u;
         }
 
-        return stackDict.find(handle)->second->count;
+        Node* head = stackDict.find(handle)->second;
+        if (head == nullptr)
+        {
+            return 0u;
+        }
+
+        return head->count;
     }
 
     void push(const Handle handle, const void* const data, const std::size_t size)
@@ -94,7 +102,7 @@ namespace stack
         }
 
         const Node* head = stackDict.find(handle)->second;
-        if (head->last == nullptr)
+        if (head == nullptr)
         {
             return 0u;
         }
