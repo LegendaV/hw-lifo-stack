@@ -53,9 +53,9 @@ namespace stack
             Node* current = stackDict.find(handle)->second;
             while (current != nullptr)
             {
-                Node* nodeToDelete = current;
-                current = current->last;
+                Node* prev = current->last;
                 delete current;
+                current = prev;
             }
             stackDict.erase(handle);
         }
